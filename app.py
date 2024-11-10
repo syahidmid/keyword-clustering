@@ -37,19 +37,39 @@ if uploaded_file is not None:
     # Membersihkan spasi tambahan di nama kolom
     df.columns = df.columns.str.strip()
     
+    # Mendapatkan daftar cluster yang tersedia
+    available_clusters = df['Cluster Name'].unique()
+    default_selection = available_clusters[:5]  # Memilih 5 cluster pertama sebagai default
+    
+    # Checkbox untuk "Select All"
+    select_all = st.sidebar.checkbox("Select All Clusters", value=False)
+    
+    # Jika "Select All" dipilih, pilih semua cluster, jika tidak, gunakan multiselect
+    if select_all:
+        selected_clusters = available_clusters.tolist()
+    else:
+        selected_clusters = st.sidebar.multiselect(
+            "Pilih Cluster untuk ditampilkan:",
+            options=available_clusters,
+            default=default_selection
+        )
+    
+    # Filter DataFrame berdasarkan cluster yang dipilih
+    filtered_df = df[df['Cluster Name'].isin(selected_clusters)]
+    
     # Membuat Tabs
     tab1, tab2 = st.tabs(["🌐 Mind Map", "📄 Data"])
     
     # Tab 1: Menampilkan Mind Map
     with tab1:
-        # Mengonversi DataFrame menjadi markdown
-        markdown_data = df_to_markdown(df)
+        # Mengonversi DataFrame yang sudah difilter menjadi markdown
+        markdown_data = df_to_markdown(filtered_df)
         st.write("### Mind Map")
         markmap(markdown_data, height=600)  # Menambah tinggi untuk tampilan yang lebih besar
     
     # Tab 2: Menampilkan Data
     with tab2:
-        st.write("### Data dari CSV")
-        st.write(df)
+        st.write("### Data dari CSV (Filtered)")
+        st.write(filtered_df)
 else:
     st.sidebar.write("Silakan upload file CSV untuk membuat mind map.")
