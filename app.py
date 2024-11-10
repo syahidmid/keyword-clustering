@@ -1,54 +1,55 @@
 import streamlit as st
+import pandas as pd
 from streamlit_markmap import markmap
 
-st.set_page_config(page_title="markmap", layout="wide")
+# Pengaturan halaman Streamlit
+st.set_page_config(page_title="Generate Mind Map from CSV", layout="wide")
 
+# Fungsi untuk mengubah DataFrame menjadi format markdown untuk mind map
+def df_to_markdown(df):
+    markdown = "# Mind Map\n"
+    
+    # Mengelompokkan data berdasarkan Cluster Name
+    cluster_groups = df.groupby('Cluster Name')
+    
+    for cluster_name, cluster_group in cluster_groups:
+        markdown += f"## {cluster_name}\n"  # Level Cluster Name
+        
+        # Mengelompokkan data berdasarkan Parent Keyword di dalam Cluster Name
+        parent_groups = cluster_group.groupby('Parent Keyword')
+        
+        for parent_keyword, parent_group in parent_groups:
+            markdown += f"### {parent_keyword}\n"  # Level Parent Keyword
+            
+            # Menambahkan setiap Cluster Member di bawah Parent Keyword
+            for keyword in parent_group['Cluster Member'].unique():
+                markdown += f"- {keyword}\n"  # Level Cluster Member
+    
+    return markdown
 
+# Upload CSV di sidebar
+uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type="csv")
 
-st.write('## example1')
-with open('markdown_data/data.md', encoding='utf-8') as fp:
-    md = fp.read()
-
-markmap(md,height=400)
-
-st.write('## example2')
-data = '''
----
-markmap:
-  colorFreezeLevel: 2
----
-
-# markmap
-
-## Links
-
-- <https://markmap.js.org/>
-- [GitHub](https://github.com/gera2ld/markmap)
-
-## Related Projects
-
-- [coc-markmap](https://github.com/gera2ld/coc-markmap)
-- [gatsby-remark-markmap](https://github.com/gera2ld/gatsby-remark-markmap)
-
-## Features
-
-- links
-- **strong** ~~del~~ *italic* ==highlight==
-- multiline
-  text
-- `inline code`
--
-    ```js
-    console.log('code block');
-    ```
-- Katex
-  - $x = {-b \pm \sqrt{b^2-4ac} \over 2a}$
-  - [More Katex Examples](#?d=gist:af76a4c245b302206b16aec503dbe07b:katex.md)
-- Now we can wrap very very very very long text based on `maxWidth` option
-
-'''
-
-markmap(data, height=400)
-
-
-
+if uploaded_file is not None:
+    # Membaca CSV ke DataFrame
+    df = pd.read_csv(uploaded_file)
+    
+    # Membersihkan spasi tambahan di nama kolom
+    df.columns = df.columns.str.strip()
+    
+    # Membuat Tabs
+    tab1, tab2 = st.tabs(["🌐 Mind Map", "📄 Data"])
+    
+    # Tab 1: Menampilkan Mind Map
+    with tab1:
+        # Mengonversi DataFrame menjadi markdown
+        markdown_data = df_to_markdown(df)
+        st.write("### Mind Map")
+        markmap(markdown_data, height=600)  # Menambah tinggi untuk tampilan yang lebih besar
+    
+    # Tab 2: Menampilkan Data
+    with tab2:
+        st.write("### Data dari CSV")
+        st.write(df)
+else:
+    st.sidebar.write("Silakan upload file CSV untuk membuat mind map.")
